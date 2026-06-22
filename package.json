@@ -1,0 +1,56 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/index.js",
+    "dev": "npx nodemon --exec \"ts-node\" src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "swagger:generate": "ts-node src/common/utils/swagger/generate-swagger.ts",
+    "swagger:dev": "npm run swagger:generate && npm run dev",
+    "----------- TYPEORM MIGRATION SCRIPTS -----------": "",
+    "migration:create": "npx typeorm migration:create",
+    "migration:run": "npx typeorm-ts-node-commonjs migration:run -d src/db/data-source.ts",
+    "migration:revert": "npx typeorm-ts-node-commonjs migration:revert -d src/db/data-source.ts",
+    "migration:show": "npx typeorm-ts-node-commonjs migration:show -d src/db/data-source.ts",
+    "----------- SEED DATA SCRIPTS -----------": "",
+    "seed:data": "PGPASSWORD=postgres psql -h localhost -U postgres -d db-name -f src/opo-seed-data.sql",
+    "----------- DO NOT USE - DISABLED -----------": "",
+    "migration:generate:DISABLED": "echo 'ERROR: migration:generate is DISABLED. Write raw SQL migrations manually using migration:create' && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Harshali-Patil-MB/ErrorHandlingLoggingPOC.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Harshali-Patil-MB/ErrorHandlingLoggingPOC/issues"
+  },
+  "homepage": "https://github.com/Harshali-Patil-MB/ErrorHandlingLoggingPOC#readme",
+  "dependencies": {
+    "argon2": "^0.44.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "joi": "^18.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.21.0",
+    "reflect-metadata": "^0.2.2",
+    "typedi": "^0.10.0",
+    "typeorm": "^0.3.28",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.9.3",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
