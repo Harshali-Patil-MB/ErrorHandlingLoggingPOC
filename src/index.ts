@@ -17,6 +17,7 @@ import {
 
 import { AuthRoutes } from "./domains/user/route/auth.routes";
 import { DoctorRoutes } from "./domains/doctor/route/doctor.routes";
+import { AppointmentRoutes } from "./domains/appointment/route/appointment.routes";
 
 class Application {
   public app: Express;
@@ -67,9 +68,11 @@ class Application {
 
     const authRoutes = Container.get(AuthRoutes);
     const doctorRoutes = Container.get(DoctorRoutes);
+    const appointmentRoutes = Container.get(AppointmentRoutes);
 
     v1Router.use("/auth", authRoutes.getRoutes());
     v1Router.use("/doctors", doctorRoutes.getRoutes());
+    v1Router.use("/appointments", appointmentRoutes.getRoutes());
 
     this.app.use("/api/v1", v1Router);
 
