@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 import { isHttpException } from "../exceptions";
+import { logger } from "../utils/logger";
 
 export const errorHandler = (
   err: Error,
@@ -8,12 +9,10 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
-  console.error({
-    message: err.message,
+  logger.error(err.message, {
     stack: err.stack,
     url: req.url,
     method: req.method,
-    timestamp: new Date().toISOString(),
   });
 
   if (err instanceof SyntaxError && "body" in err) {
@@ -44,6 +43,12 @@ export const errorHandler = (
 };
 
 export const notFoundHandler = (req: Request, res: Response): void => {
+  logger.warn("Route not found", {
+    url: req.url,
+    method: req.method,
+    timestamp: new Date().toISOString(),
+  });
+
   res.status(404).json({
     status: 404,
     message: `Route ${req.method} ${req.path} not found`,

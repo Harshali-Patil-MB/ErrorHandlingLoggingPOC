@@ -12,6 +12,8 @@ export const AuthErrorMessages = {
   // Validation
   VALIDATION_FAILED: "Validation failed",
   INVALID_CREDENTIALS: "Invalid email or password",
+  USER_NOT_FOUND: "User not found. Please register first.",
+  INCORRECT_PASSWORD: "Incorrect password",
 
   // Authentication
   AUTH_TOKEN_REQUIRED: "Authorization token is required",

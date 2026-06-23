@@ -1,8 +1,11 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
+import path from "path";
 import * as dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"),
+});
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -21,5 +24,5 @@ export const AppDataSource = new DataSource({
     "dist/domains/**/*.entity.js",
   ],
 
-  migrations: ["src/migrations/*.ts", "dist/migrations/*.js"],
+  migrations: ["src/migrations/*.ts"],
 });

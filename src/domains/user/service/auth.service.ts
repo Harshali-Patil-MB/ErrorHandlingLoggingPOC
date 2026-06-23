@@ -32,6 +32,9 @@ export class AuthService {
     const existingUser = await this.repository.findByEmail(data.email);
 
     if (existingUser) {
+      this.logger.warn("Registration failed: email already exists", {
+        email: data.email,
+      });
       throw new ConflictException("Email already exists");
     }
 
@@ -70,13 +73,21 @@ export class AuthService {
     const user = await this.repository.findByEmail(data.email);
 
     if (!user) {
-      throw new UnauthorizedException("Invalid email or password");
+      this.logger.warn("Login failed: user not found", {
+        email: data.email,
+      });
+      throw new UnauthorizedException("User not found. Please register first.");
     }
 
     const isPasswordValid = await argon2.verify(user.password, data.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException("Invalid email or password");
+      this.logger.warn("Login failed: incorrect password", {
+        userId: user.id,
+        publicId: user.publicId,
+        email: user.email,
+      });
+      throw new UnauthorizedException("Incorrect password");
     }
 
     const secret = process.env.JWT_SECRET;

@@ -35,5 +35,10 @@ export class DoctorRoutes {
       "/:publicId",
       asyncHandler(this.controller.getDoctorByPublicId.bind(this.controller)),
     );
+
+    this.router.get(
+      "/:publicId/available-slots",
+      asyncHandler(this.controller.getAvailableSlots.bind(this.controller)),
+    );
   }
 }

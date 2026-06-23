@@ -24,3 +24,14 @@ export interface AppointmentResponseDto {
   updatedAt: Date;
 }
 
+export interface AvailableSlotDto {
+  value: string;
+  label: string;
+  status: "AVAILABLE" | "BOOKED";
+}
+
+export interface AvailableSlotsResponseDto {
+  doctor: DoctorSummaryDto;
+  date: string;
+  slots: AvailableSlotDto[];
+}

@@ -4,6 +4,7 @@ import { ObjectSchema } from "joi";
 import { HttpStatus } from "../constants/http-status.constants";
 
 import { AuthErrorMessages } from "../constants/auth-error-messages.constants";
+import { logger } from "../utils/logger";
 
 export const validate = (schema: ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -13,6 +14,16 @@ export const validate = (schema: ObjectSchema) => {
     });
 
     if (error) {
+      logger.warn("Validation failed", {
+        url: req.url,
+        method: req.method,
+        errors: error.details.map((detail) => ({
+          field: detail.path.join("."),
+          message: detail.message,
+        })),
+        timestamp: new Date().toISOString(),
+      });
+
       const errors = error.details.map((detail) => ({
         field: detail.path.join("."),
         message: detail.message,
@@ -42,6 +53,12 @@ export const validateLogin = (schema: ObjectSchema) => {
     });
 
     if (error) {
+      logger.warn("Login validation failed", {
+        url: req.url,
+        method: req.method,
+        timestamp: new Date().toISOString(),
+      });
+
       res.status(HttpStatus.UNAUTHORIZED).json({
         status: HttpStatus.UNAUTHORIZED,
         message: AuthErrorMessages.INVALID_CREDENTIALS,

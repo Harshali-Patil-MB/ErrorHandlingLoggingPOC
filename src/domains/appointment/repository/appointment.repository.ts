@@ -61,5 +61,23 @@ export class AppointmentRepository {
       },
     });
   }
-}
 
+  public async findBookedSlotsByDoctorAndDateRange(
+    doctorId: number,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<Appointment[]> {
+    return this.repository
+      .createQueryBuilder("appointment")
+      .leftJoinAndSelect("appointment.doctor", "doctor")
+      .leftJoinAndSelect("appointment.patient", "patient")
+      .where("doctor.id = :doctorId", { doctorId })
+      .andWhere("appointment.appointmentDate >= :startDate", { startDate })
+      .andWhere("appointment.appointmentDate < :endDate", { endDate })
+      .andWhere("appointment.status = :status", {
+        status: AppointmentStatus.BOOKED,
+      })
+      .orderBy("appointment.appointmentDate", "ASC")
+      .getMany();
+  }
+}

@@ -3,9 +3,12 @@ import "reflect-metadata";
 import express, { Express, Router } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 import { Container } from "typedi";
 
-dotenv.config();
+dotenv.config({
+  path: path.resolve(process.cwd(), ".env"),
+});
 
 import { AppDataSource } from "./db/data-source";
 import { logger } from "./common/utils/logger";

@@ -7,18 +7,21 @@ import { NotFoundException } from "../../../common/exceptions/not-found.exceptio
 import { LoggerService } from "../../../common/utils/logger.service";
 import { UserRepository } from "../../user/repository/user.repository";
 import { DoctorRepository } from "../../doctor/repository/doctor.repository";
+import { DoctorSlotRepository } from "../../doctor/repository/doctor-slot.repository";
 import { AppointmentStatus } from "../entity/appointment.entity";
 import {
   AppointmentResponseDto,
   CreateAppointmentRequestDto,
 } from "../dto/appointment.dto";
 import { AppointmentRepository } from "../repository/appointment.repository";
+import { QueryFailedError } from "typeorm";
 
 @Service()
 export class AppointmentService {
   constructor(
     private readonly repository: AppointmentRepository,
     private readonly doctorRepository: DoctorRepository,
+    private readonly slotRepository: DoctorSlotRepository,
     private readonly userRepository: UserRepository,
     private readonly logger: LoggerService,
   ) {}
@@ -32,8 +35,33 @@ export class AppointmentService {
       doctorPublicId: data.doctorPublicId,
     });
 
-    if (!(data.appointmentDate instanceof Date) || Number.isNaN(data.appointmentDate.getTime())) {
+    if (
+      !(data.appointmentDate instanceof Date) ||
+      Number.isNaN(data.appointmentDate.getTime())
+    ) {
       throw new BadRequestException("Invalid date");
+    }
+
+    if (data.appointmentDate.getTime() <= Date.now()) {
+      this.logger.warn("Rejected past appointment date", {
+        patientId,
+        appointmentDate: data.appointmentDate,
+      });
+      throw new BadRequestException("Appointment date must be in the future");
+    }
+
+    if (
+      data.appointmentDate.getMinutes() % 30 !== 0 ||
+      data.appointmentDate.getSeconds() !== 0 ||
+      data.appointmentDate.getMilliseconds() !== 0
+    ) {
+      this.logger.warn("Rejected non-slot appointment time", {
+        patientId,
+        appointmentDate: data.appointmentDate,
+      });
+      throw new BadRequestException(
+        "Appointment time must be on a 30-minute slot",
+      );
     }
 
     const patient = await this.userRepository.findById(patientId);
@@ -50,6 +78,20 @@ export class AppointmentService {
       throw new NotFoundException("Doctor not found");
     }
 
+    const slot = await this.slotRepository.findSlotByDoctorAndDateTime(
+      doctor.id,
+      data.appointmentDate,
+    );
+
+    if (!slot) {
+      this.logger.warn("Rejected unavailable appointment slot", {
+        patientId,
+        doctorId: doctor.id,
+        appointmentDate: data.appointmentDate,
+      });
+      throw new BadRequestException("Appointment time is not available");
+    }
+
     const bookedSlot = await this.repository.findBookedSlotByDoctorAndDate(
       doctor.id,
       data.appointmentDate,
@@ -63,13 +105,31 @@ export class AppointmentService {
       throw new ConflictException("Slot already booked");
     }
 
-    const appointment = await this.repository.create({
-      patient,
-      doctor,
-      reason: data.reason,
-      appointmentDate: data.appointmentDate,
-      status: AppointmentStatus.BOOKED,
-    });
+    let appointment;
+
+    try {
+      appointment = await this.repository.create({
+        patient,
+        doctor,
+        reason: data.reason,
+        appointmentDate: data.appointmentDate,
+        status: AppointmentStatus.BOOKED,
+      });
+    } catch (error) {
+      if (
+        error instanceof QueryFailedError &&
+        typeof (error as { code?: string }).code === "string" &&
+        (error as { code?: string }).code === "23505"
+      ) {
+        this.logger.warn("Appointment slot already booked", {
+          doctorId: doctor.id,
+          appointmentDate: data.appointmentDate,
+        });
+        throw new ConflictException("Slot already booked");
+      }
+
+      throw error;
+    }
 
     this.logger.info("Appointment created successfully", {
       appointmentId: appointment.id,
@@ -199,4 +259,3 @@ export class AppointmentService {
     };
   }
 }
-

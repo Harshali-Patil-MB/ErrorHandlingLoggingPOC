@@ -47,4 +47,22 @@ export class DoctorController {
       data,
     });
   }
+
+  public async getAvailableSlots(
+    req: Request,
+    res: Response,
+  ): Promise<Response> {
+    const publicId = Array.isArray(req.params.publicId)
+      ? req.params.publicId[0]
+      : req.params.publicId;
+    const date = typeof req.query.date === "string" ? req.query.date : "";
+
+    const data = await this.doctorService.getAvailableSlots(publicId, date);
+
+    return generateResponse(res, {
+      statusCode: HttpStatus.OK,
+      message: "Available slots fetched successfully.",
+      data,
+    });
+  }
 }
