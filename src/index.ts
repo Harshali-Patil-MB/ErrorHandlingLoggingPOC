@@ -1,38 +1,107 @@
-// src/index.ts
-
 import "reflect-metadata";
-import express from "express";
+
+import express, { Express, Router } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { AppDataSource } from "./db/data-source";
+import { Container } from "typedi";
 
 dotenv.config();
 
-const app = express();
-const PORT = Number(process.env.PORT) || 5000;
+import { AppDataSource } from "./db/data-source";
+import { logger } from "./common/utils/logger";
 
-app.use(cors());
-app.use(express.json());
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./common/middleware/error-handler.middleware";
 
-app.get("/api/test", (req, res) => {
-  res.json({
-    success: true,
-    message: "API working",
-  });
-});
+import { AuthRoutes } from "./domains/user/route/auth.routes";
+import { DoctorRoutes } from "./domains/doctor/route/doctor.routes";
 
-async function startServer() {
-  try {
-    await AppDataSource.initialize();
-    console.log("Database connected");
+class Application {
+  public app: Express;
+  private port: number;
 
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+  constructor() {
+    this.app = express();
+    this.port = parseInt(process.env.PORT || "5000", 10);
+
+    this.initializeMiddleware();
+    this.initializeRoutes();
+    this.initializeErrorHandling();
+  }
+
+  private initializeMiddleware(): void {
+    const allowedOrigins = (
+      process.env.ALLOWED_ORIGINS || "http://localhost:5173"
+    ).split(",");
+
+    this.app.use(
+      cors({
+        origin: (origin, callback) => {
+          if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+          } else {
+            callback(new Error(`CORS: origin '${origin}' is not allowed`));
+          }
+        },
+        credentials: true,
+      }),
+    );
+
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
+
+    logger.info("Middleware initialized");
+  }
+
+  private initializeRoutes(): void {
+    const v1Router = Router();
+
+    v1Router.get("/test", (req, res) => {
+      res.status(200).json({
+        status: 200,
+        message: "API working",
+      });
     });
-  } catch (error) {
-    console.error("Startup error", error);
-    process.exit(1);
+
+    const authRoutes = Container.get(AuthRoutes);
+    const doctorRoutes = Container.get(DoctorRoutes);
+
+    v1Router.use("/auth", authRoutes.getRoutes());
+    v1Router.use("/doctors", doctorRoutes.getRoutes());
+
+    this.app.use("/api/v1", v1Router);
+
+    logger.info("Routes initialized");
+  }
+
+  private initializeErrorHandling(): void {
+    this.app.use(notFoundHandler);
+    this.app.use(errorHandler);
+
+    logger.info("Error handling initialized");
+  }
+
+  public async start(): Promise<void> {
+    try {
+      await AppDataSource.initialize();
+
+      logger.info("Database connected");
+
+      this.app.listen(this.port, () => {
+        logger.info(`Server running on port ${this.port}`);
+        logger.info(`Test API: http://localhost:${this.port}/api/v1/test`);
+      });
+    } catch (error) {
+      logger.error("Startup error", error);
+      process.exit(1);
+    }
   }
 }
 
-startServer();
+const application = new Application();
+
+application.start();
+
+export default application.app;
