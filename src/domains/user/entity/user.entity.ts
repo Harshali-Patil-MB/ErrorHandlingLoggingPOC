@@ -32,6 +32,12 @@ export class User {
   @Column()
   password!: string;
 
+  @Column({
+    type: "varchar",
+    default: "PATIENT",
+  })
+  role!: string;
+
   @OneToMany(() => Appointment, (appointment) => appointment.patient)
   appointments!: Appointment[];
 

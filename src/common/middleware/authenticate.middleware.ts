@@ -1,25 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+
 import { HttpStatus } from "../constants/http-status.constants";
 import { AuthErrorMessages } from "../constants/auth-error-messages.constants";
 
-/**
- * =============================================================================
- * Authentication Middleware
- * =============================================================================
- *
- * Verifies the Bearer JWT in the Authorization header and attaches the decoded
- * payload to req.user. Must run before any route handler that needs the user.
- *
- * USAGE
- *   router.get("/protected", authenticate, handler);
- *
- * EXTENDING
- *   For session-based validation (e.g. invalidating tokens on logout) add a
- *   session repository lookup after the JWT verification block below.
- *
- * =============================================================================
- */
 export const authenticate = async (
   req: Request,
   res: Response,
@@ -49,6 +33,7 @@ export const authenticate = async (
     }
 
     const token = parts[1];
+
     const secret = process.env.JWT_SECRET;
 
     if (!secret) {
@@ -56,9 +41,10 @@ export const authenticate = async (
     }
 
     let payload: {
-      userId: string;
+      id: number;
+      publicId: string;
       email: string;
-      roles: string[];
+      role: string;
     };
 
     try {
@@ -72,15 +58,15 @@ export const authenticate = async (
       return;
     }
 
-    // Attach decoded user to request — available to all downstream handlers
     req.user = {
-      userId: payload.userId,
+      id: payload.id,
+      publicId: payload.publicId,
       email: payload.email,
-      roles: payload.roles ?? [],
+      role: payload.role,
     };
 
     next();
-  } catch (error) {
+  } catch {
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       message: AuthErrorMessages.AUTHENTICATION_ERROR_OCCURRED,
